@@ -2,6 +2,7 @@ import os
 import argparse
 import logging
 import time
+import datetime
 import numpy as np
 import numpy.random as npr
 import matplotlib
@@ -15,7 +16,7 @@ import torch.nn.functional as F
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--adjoint', type=eval, default=False)
-parser.add_argument('--visualize', type=eval, default=False)
+parser.add_argument('--visualize', type=eval, default=True)
 parser.add_argument('--niters', type=int, default=2000)
 parser.add_argument('--lr', type=float, default=0.01)
 parser.add_argument('--gpu', type=int, default=0)
@@ -245,7 +246,8 @@ if __name__ == '__main__':
             orig_ts = checkpoint['orig_ts']
             samp_ts = checkpoint['samp_ts']
             print('Loaded ckpt from {}'.format(ckpt_path))
-
+    start_time = time.time()
+    end_time = start_time
     try:
         for itr in range(1, args.niters + 1):
             optimizer.zero_grad()
@@ -274,9 +276,57 @@ if __name__ == '__main__':
             loss.backward()
             optimizer.step()
             loss_meter.update(loss.item())
+            # curr_time = time.time()
+            running_avg_elbo = -loss_meter.avg
+            print('Iter: {}, running avg elbo: {:.4f}'.format(itr, running_avg_elbo))
+            # # output at every 25 iters
+            # if (itr % 25 == 0 or itr == 1):
+            #     with torch.no_grad():
+            #         # sample from trajectorys' approx. posterior
+            #         h = rec.initHidden().to(device)
+            #         for t in reversed(range(samp_trajs.size(1))):
+            #             obs = samp_trajs[:, t, :]
+            #             out, h = rec.forward(obs, h)
+            #         qz0_mean, qz0_logvar = out[:, :latent_dim], out[:, latent_dim:]
+            #         epsilon = torch.randn(qz0_mean.size()).to(device)
+            #         z0 = epsilon * torch.exp(.5 * qz0_logvar) + qz0_mean
+            #         orig_ts1 = torch.from_numpy(orig_ts).float().to(device)
 
-            print('Iter: {}, running avg elbo: {:.4f}'.format(itr, -loss_meter.avg))
+            #         # take first trajectory for visualization
+            #         z0 = z0[0]
 
+            #         ts_pos = np.linspace(0., 2. * np.pi, num=2000)
+            #         ts_neg = np.linspace(-np.pi, 0., num=2000)[::-1].copy()
+            #         ts_pos = torch.from_numpy(ts_pos).float().to(device)
+            #         ts_neg = torch.from_numpy(ts_neg).float().to(device)
+
+            #         zs_pos = odeint(func, z0, ts_pos)
+            #         zs_neg = odeint(func, z0, ts_neg)
+
+            #         xs_pos = dec(zs_pos)
+            #         xs_neg = torch.flip(dec(zs_neg), dims=[0])
+
+            #     xs_pos = xs_pos.cpu().numpy()
+            #     xs_neg = xs_neg.cpu().numpy()
+            #     orig_traj = orig_trajs[0].cpu().numpy()
+            #     samp_traj = samp_trajs[0].cpu().numpy()
+
+            #     plt.figure()
+            #     plt.plot(orig_traj[:, 0], orig_traj[:, 1],
+            #             'g', label='true trajectory')
+            #     plt.plot(xs_pos[:, 0], xs_pos[:, 1], 'r',
+            #             label='learned trajectory (t>0)')
+            #     plt.plot(xs_neg[:, 0], xs_neg[:, 1], 'c',
+            #             label='learned trajectory (t<0)')
+            #     plt.scatter(samp_traj[:, 0], samp_traj[
+            #                 :, 1], label='sampled data', s=3)
+            #     plt.legend()
+            #     delta_time = str(round(curr_time - start_time, 3))
+            #     running_avg_elbo = str(round(abs(running_avg_elbo),4))
+            #     filename = './vis_' + str(itr) + '_' + delta_time + '_' + running_avg_elbo + '.png'
+            #     plt.savefig(filename, dpi=500)
+            #     print('Saved visualization figure at {}'.format(filename))
+        
     except KeyboardInterrupt:
         if args.train_dir is not None:
             ckpt_path = os.path.join(args.train_dir, 'ckpt.pth')
@@ -291,6 +341,7 @@ if __name__ == '__main__':
                 'samp_ts': samp_ts,
             }, ckpt_path)
             print('Stored ckpt at {}'.format(ckpt_path))
+    end_time = time.time()
     print('Training complete after {} iters.'.format(itr))
 
     if args.visualize:
@@ -334,5 +385,7 @@ if __name__ == '__main__':
         plt.scatter(samp_traj[:, 0], samp_traj[
                     :, 1], label='sampled data', s=3)
         plt.legend()
-        plt.savefig('./vis.png', dpi=500)
-        print('Saved visualization figure at {}'.format('./vis.png'))
+        delta_time = str(round(end_time-start_time,3))
+        filename = './vis_' + str(args.niters) + '_' + delta_time + '_' + str(round(abs(running_avg_elbo),4)) + '.png'
+        plt.savefig(filename, dpi=500)
+        print('Saved visualization figure at {}'.format(filename))
