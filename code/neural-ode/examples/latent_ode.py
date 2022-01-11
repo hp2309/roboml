@@ -21,6 +21,7 @@ parser.add_argument('--niters', type=int, default=2000)
 parser.add_argument('--lr', type=float, default=0.01)
 parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--train_dir', type=str, default=None)
+parser.add_argument('--nspiral', type=int, default=1000)
 args = parser.parse_args()
 
 if args.adjoint:
@@ -200,7 +201,8 @@ if __name__ == '__main__':
     nhidden = 20
     rnn_nhidden = 25
     obs_dim = 2
-    nspiral = 1000
+    # nspiral = 1000
+    nspiral = args.nspiral
     start = 0.
     stop = 6 * np.pi
     noise_std = .3
@@ -386,6 +388,6 @@ if __name__ == '__main__':
                     :, 1], label='sampled data', s=3)
         plt.legend()
         delta_time = str(round(end_time-start_time,3))
-        filename = './vis_' + str(args.niters) + '_' + delta_time + '_' + str(round(abs(running_avg_elbo),4)) + '.png'
+        filename = './vis_' + str(args.adjoint) + '_' + str(args.nspiral) + '_' + delta_time + '_' + str(round(abs(running_avg_elbo),4)) + '.png'
         plt.savefig(filename, dpi=500)
         print('Saved visualization figure at {}'.format(filename))

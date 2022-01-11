@@ -6,6 +6,11 @@ import numpy as np
 if __name__ == '__main__':
     i = 500
     while i <= 5000:
-        subprocess.call(" python latent_ode.py --adjoint=True --niters=" + str(i), shell=True)
+        subprocess.call(" python latent_ode.py --nspiral=" + str(i), shell=True)
         i += 500
-    print("Done")
+    print("Done for adjoint False")
+    i = 500
+    while i <= 5000:
+        subprocess.call(" python latent_ode.py --adjoint=True --nspiral=" + str(i), shell=True)
+        i += 500
+    print("Done for adjoint True")
