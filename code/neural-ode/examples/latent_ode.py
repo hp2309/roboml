@@ -22,6 +22,7 @@ parser.add_argument('--lr', type=float, default=0.01)
 parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--train_dir', type=str, default=None)
 parser.add_argument('--nspiral', type=int, default=1000)
+parser.add_argument('--nsample', type=int, default=100)
 args = parser.parse_args()
 
 if args.adjoint:
@@ -40,7 +41,6 @@ def generate_spiral2d(nspiral=1000,
                       b=1.,
                       savefig=True):
     """Parametric formula for 2d spiral is `r = a + b * theta`.
-
     Args:
       nspiral: number of spirals, i.e. batch dimension
       ntotal: total number of datapoints per spiral
@@ -50,7 +50,6 @@ def generate_spiral2d(nspiral=1000,
       noise_std: observation noise standard deviation
       a, b: parameters of the Archimedean spiral
       savefig: plot the ground truth for sanity check
-
     Returns: 
       Tuple where first element is true trajectory of size (nspiral, ntotal, 2),
       second element is noisy observations of size (nspiral, nsample, 2),
@@ -209,13 +208,14 @@ if __name__ == '__main__':
     a = 0.
     b = .3
     ntotal = 1000
-    nsample = 100
+    nsample = args.nsample
     device = torch.device('cuda:' + str(args.gpu)
                           if torch.cuda.is_available() else 'cpu')
 
     # generate toy spiral data
     orig_trajs, samp_trajs, orig_ts, samp_ts = generate_spiral2d(
         nspiral=nspiral,
+        nsample=nsample,
         start=start,
         stop=stop,
         noise_std=noise_std,
@@ -388,6 +388,6 @@ if __name__ == '__main__':
                     :, 1], label='sampled data', s=3)
         plt.legend()
         delta_time = str(round(end_time-start_time,3))
-        filename = './vis_' + str(args.adjoint) + '_' + str(args.nspiral) + '_' + delta_time + '_' + str(round(abs(running_avg_elbo),4)) + '.png'
+        filename = './vis_' + str(args.adjoint) + '_' + str(args.nsample) + '_' + delta_time + '_' + str(round(abs(running_avg_elbo),4)) + '.png'
         plt.savefig(filename, dpi=500)
         print('Saved visualization figure at {}'.format(filename))
